@@ -5,12 +5,6 @@ module Blacklight
     class ImportmapGenerator < Rails::Generators::Base
       class_option :'bootstrap-version', type: :string, default: ENV.fetch('BOOTSTRAP_VERSION', '~> 5.3'), desc: "Set the generated app's bootstrap version"
 
-      # This could be skipped if you want to use webpacker
-      def add_javascript_dependencies
-        gem 'bootstrap', options[:'bootstrap-version'].presence # in rails 7, only for stylesheets
-        gem 'jquery-rails' if bootstrap_4? # Bootstrap 4 has a dependency on jquery
-      end
-
       def import_javascript_assets
         append_to_file 'config/importmap.rb' do
           <<~CONTENT
@@ -38,8 +32,41 @@ module Blacklight
       end
 
       def add_stylesheet
+<<<<<<< HEAD
         gem "sassc-rails", "~> 2.1" if Rails.version > '7'
 
+=======
+        unless used_bootstrap_css?
+          generate_with_sassc_rails
+          return
+        end
+
+        if ENV['CI']
+          run "yarn add file:#{Blacklight::Engine.root}"
+        else
+          run "yarn add blacklight-frontend@#{Blacklight::VERSION}"
+        end
+
+        append_to_file 'app/assets/stylesheets/application.bootstrap.scss' do
+          <<~CONTENT
+            @import "blacklight-frontend/app/assets/stylesheets/blacklight/blacklight";
+          CONTENT
+        end
+      end
+
+      private
+
+      # Did they generate the rails app with `--css bootstrap' ?
+      def used_bootstrap_css?
+        File.exist? 'app/assets/stylesheets/application.bootstrap.scss'
+      end
+
+      def generate_with_sassc_rails
+        gem "sassc-rails", "~> 2.1"
+        # This could be skipped if you want to use shakapacker or cssbunding-rails
+        gem 'bootstrap', options[:'bootstrap-version'].presence
+
+>>>>>>> e436d713 (Don't install the bootstrap gem unless they are using sassc)
         create_file 'app/assets/stylesheets/blacklight.scss' do
           <<~CONTENT
             @import 'bootstrap';
